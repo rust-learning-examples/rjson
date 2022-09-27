@@ -1,5 +1,7 @@
 mod reactive;
+mod effect;
 pub use reactive::reactive;
+pub use effect::effect;
 
 pub trait RJson {
     fn pget<I: serde_json::value::Index>(&self, index: I) -> &serde_json::Value;

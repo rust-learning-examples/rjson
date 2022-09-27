@@ -12,17 +12,23 @@ fn main() {
       }
   }));
 
-  let mut state = state.lock().unwrap();
-  state.pset("name", "zhangsan".into());
-  state.pset("age", 18.into());
-  state.pset("age2", serde_json::json!(null));
-  state["phones"][0] = "0529".into();
-  state.pset("phones.1", "0539".into());
-  println!("name: {}, age: {}, age2: {}", state.pget("name"), state.pget("age"), state.pget("age2"));
-  println!("phones: {:?}", state.pget("phones.0"));
-  println!("state: {:?}", state);
+  {
+    let state = state.clone();
+    rjson::effect(move || {
+      let state = state.lock().unwrap();
+      println!("hello effect, age: {}", state.pget("age"));
+    });
+  }
 
-  // rjson::effect(move || {
-  //     println!("hello effect, age: {}", state.pget("age"));
-  // });
+  {
+    let mut state = state.lock().unwrap();
+    state.pset("name", "zhangsan".into());
+    state.pset("age", 18.into());
+    state.pset("age2", serde_json::json!(null));
+    state["phones"][0] = "0529".into();
+    state.pset("phones.1", "0539".into());
+    println!("name: {}, age: {}, age2: {}", state.pget("name"), state.pget("age"), state.pget("age2"));
+    println!("phones: {:?}", state.pget("phones.0"));
+    println!("state: {:?}", state);
+  }
 }
