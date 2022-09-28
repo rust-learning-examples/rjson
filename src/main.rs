@@ -15,20 +15,21 @@ fn main() {
   {
     let state = state.clone();
     rjson::effect(move || {
-      let state = state.lock().unwrap();
-      println!("hello effect, age: {}", state.pget("age"));
+      let state_inner = state.inner();
+      let state_reader = state_inner.read().unwrap();
+      println!("hello effect, age: {}", state_reader.pget("age"));
     });
   }
 
   {
-    let mut state = state.lock().unwrap();
     state.pset("name", "zhangsan".into());
     state.pset("age", 18.into());
     state.pset("age2", serde_json::json!(null));
-    state["phones"][0] = "0529".into();
     state.pset("phones.1", "0539".into());
-    println!("name: {}, age: {}, age2: {}", state.pget("name"), state.pget("age"), state.pget("age2"));
-    println!("phones: {:?}", state.pget("phones.0"));
-    println!("state: {:?}", state);
+
+    let state_inner = state.inner();
+    let state_reader = state_inner.read().unwrap();
+    println!("name: {}, age: {}, age2: {}", state_reader.pget("name"), state_reader.pget("age"), state_reader.pget("age2"));
+    println!("phones: {:?}", state_reader.pget("phones.0"));
   }
 }
