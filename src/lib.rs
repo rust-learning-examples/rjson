@@ -1,5 +1,5 @@
-pub(crate) mod reactive;
-pub(crate) mod effect;
+pub mod reactive;
+pub mod effect;
 pub use reactive::reactive;
 pub use effect::effect;
 

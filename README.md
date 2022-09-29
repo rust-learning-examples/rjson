@@ -1,3 +1,4 @@
+```rust
 fn main() {
   let state = rjson::reactive(serde_json::json!({
       "name": "John Doe",
@@ -32,3 +33,4 @@ fn main() {
   }
   std::thread::park();
 }
+```
