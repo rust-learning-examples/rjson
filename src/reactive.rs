@@ -105,6 +105,13 @@ impl std::ops::DerefMut for ReactiveImpl {
       &mut self.json
   }
 }
+impl Drop for ReactiveImpl {
+  fn drop(&mut self) {
+    let mut bucket = crate::effect::BUCKET.lock().unwrap();
+    bucket.remove(&self.id);
+    log::debug!("drop reactive {}", self.id);
+  }
+}
 
 pub fn reactive(json: serde_json::Value) -> Arc<Mutex<ReactiveImpl>> {
   Arc::new(Mutex::new(ReactiveImpl::new(json)))
