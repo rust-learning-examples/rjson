@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod reactive {
+  use rjson::RJson;
   use std::sync::{Arc, Mutex};
   #[test]
   fn main_test() {

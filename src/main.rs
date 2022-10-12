@@ -1,3 +1,4 @@
+use rjson::RJson;
 fn main() {
   tracing_subscriber::fmt::init();
   {
