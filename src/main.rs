@@ -17,7 +17,7 @@ fn main() {
       let effect_state = state.clone();
       let _eff = rjson::effect(move || {
           let state = effect_state.lock().unwrap();
-          println!("-- hello effect, age: {}", state.pget("age"));
+          println!("-- hello effect, phones.1: {}", state.pget("phones.1"));
       });
 
       {
@@ -25,7 +25,7 @@ fn main() {
         state.pset("name", "zhangsan".into());
         state.pset("age", 18.into());
         state.pset("age", 19.into());
-        state.pset("age2", serde_json::json!(null));
+        // state.pset("age2", serde_json::json!(null)); // 无法追加新的属性，会使内存布局重排，导致其他变量ptr地址改变
         state.pset("phones.1", "0539".into());
 
         println!(

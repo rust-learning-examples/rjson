@@ -1,6 +1,6 @@
 use crate::RJson;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{mpsc, Arc, Mutex, Weak};
 
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -10,9 +10,59 @@ pub static BUCKET: Lazy<
 > = Lazy::new(|| Mutex::new(HashMap::new()));
 // 当前正在执行的effect
 static ACTIVE_EFFECT: Lazy<Mutex<Option<Arc<Effect>>>> = Lazy::new(|| Mutex::new(None));
-// 将要执行回调的effects
-static STACK_EFFECTS: Lazy<Mutex<WeakHashSet<Weak<Effect>>>> =
-    Lazy::new(|| Mutex::new(WeakHashSet::new()));
+
+lazy_static::lazy_static! {
+    static ref EFFECT_RUNNER: EffectRunner = {
+        let (sender, receiver) = mpsc::channel();
+        let sender = Arc::new(Mutex::new(sender));
+        EffectRunner {
+            sender: Some(sender),
+            thread: Some(std::thread::spawn(move || {
+                // 延迟1s执行effect.run方法
+                let delay = std::time::Duration::from_millis(1);
+                let effect_run_debouncer = debounce::EventDebouncer::new(delay, move |effect: Arc<Effect>| {
+                    effect.run();
+                });
+                loop {
+                    let message = receiver.recv();
+                    match message {
+                        Ok(effect) => {
+                            effect_run_debouncer.put(effect);
+                        }
+                        Err(_) => {
+                            println!("shutting down.");
+                            break;
+                        }
+                    }
+                }
+            }))
+        }
+    };
+}
+
+/**
+ * EffectRunner
+ */
+struct EffectRunner {
+    sender: Option<Arc<Mutex<mpsc::Sender<Arc<Effect>>>>>,
+    thread: Option<std::thread::JoinHandle<()>>
+}
+impl EffectRunner {
+    fn run(&self, effect: Arc<Effect>) {
+        self.sender.as_ref().unwrap().lock().unwrap().send(effect).unwrap();
+    }
+}
+impl Drop for EffectRunner {
+    fn drop(&mut self) {
+        drop(self.sender.take());
+        if let Some(thread) = self.thread.take() {
+            thread.join().unwrap();
+        }
+    }
+}
+/**
+ * Effect
+ */
 pub struct Effect {
     closure: Pin<Box<dyn Fn() -> () + Send + Sync + 'static>>,
     deps: Mutex<Vec<Arc<Mutex<WeakHashSet<Weak<Effect>>>>>>,
@@ -52,20 +102,7 @@ impl Effect {
                 let dep_set = dep_set.lock().unwrap();
                 for effect in dep_set.iter() {
                     let effect = effect.clone();
-                    {
-                        let mut stack_effects = STACK_EFFECTS.lock().unwrap();
-                        if stack_effects.contains(&effect) {
-                            // effect是否在将执行队列中
-                            return;
-                        } else {
-                            stack_effects.insert(effect.clone());
-                        }
-                    }
-                    std::thread::spawn(move || {
-                        effect.run();
-                        let mut stack_effects = STACK_EFFECTS.lock().unwrap();
-                        stack_effects.remove(&effect);
-                    });
+                    EFFECT_RUNNER.run(effect);
                 }
             }
         }
