@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use weak_table::WeakHashSet;
 pub static BUCKET: Lazy<
-    Mutex<HashMap<String, HashMap<String, Arc<Mutex<WeakHashSet<Weak<Effect>>>>>>>,
+    Mutex<HashMap<usize, HashMap<String, Arc<Mutex<WeakHashSet<Weak<Effect>>>>>>>,
 > = Lazy::new(|| Mutex::new(HashMap::new()));
 // 当前正在执行的effect
 static ACTIVE_EFFECT: Lazy<Mutex<Option<Arc<Effect>>>> = Lazy::new(|| Mutex::new(None));

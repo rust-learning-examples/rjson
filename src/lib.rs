@@ -9,15 +9,17 @@ lazy_static::lazy_static! {
     };
 }
 pub trait RJson {
-    fn get_ptr(&self) -> String;
+    // fn get_ptr(&self) -> String { format!("{:p}", self) }
+    fn get_ptr(&self) -> usize;
     // fn pget<I: serde_json::value::Index>(&self, index: I) -> &serde_json::Value;
     fn pget(&self, index: &str) -> &serde_json::Value;
     // fn pset<I: serde_json::value::Index>(&mut self, index: I, value: serde_json::Value);
     fn pset(&mut self, index: &str, value: serde_json::Value);
 }
 impl RJson for serde_json::Value {
-    fn get_ptr(&self) -> String {
-        format!("{:p}", self)
+    fn get_ptr(&self) -> usize {
+        // unsafe { std::mem::transmute(&*self) } 
+        self as *const serde_json::Value as usize
     }
     fn pget(&self, index: &str) -> &serde_json::Value {
         let indexs: Vec<&str> = index.split(".").collect();
