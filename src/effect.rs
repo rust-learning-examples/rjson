@@ -1,9 +1,9 @@
-use crate::RJson;
+// use crate::RJson;
 use std::pin::Pin;
 use std::sync::{mpsc, Arc, Mutex, Weak};
 
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
+use std::collections::{HashMap};
 use weak_table::WeakHashSet;
 pub static BUCKET: Lazy<
     Mutex<HashMap<usize, HashMap<String, Arc<Mutex<WeakHashSet<Weak<Effect>>>>>>>,
@@ -69,13 +69,13 @@ pub struct Effect {
 }
 
 impl Effect {
-    pub fn track(target: &serde_json::Value, key: &str) {
+    pub fn track(target_ptr: usize, key: &str) {
         let active_effect = ACTIVE_EFFECT.lock().unwrap();
         if active_effect.is_none() {
             return;
         }
         let mut bucket = BUCKET.lock().unwrap();
-        let reactive_ptr = target.get_ptr();
+        let reactive_ptr = target_ptr;
         if bucket.get(&reactive_ptr).is_none() {
             bucket.insert(reactive_ptr.clone(), HashMap::new());
         }
@@ -92,9 +92,9 @@ impl Effect {
             active_effect_deps.push(dep_set.clone());
         }
     }
-    pub fn trigger(target: &serde_json::Value, key: &str) {
+    pub fn trigger(target_ptr: usize, key: &str) {
         let bucket = BUCKET.lock().unwrap();
-        let reactive_ptr = target.get_ptr();
+        let reactive_ptr = target_ptr;
         let deps_map = bucket.get(&reactive_ptr);
         if let Some(deps_map) = deps_map {
             let dep_set = deps_map.get(key);
